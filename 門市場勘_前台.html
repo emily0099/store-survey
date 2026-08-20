@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>新增場勘資訊</title>
+<style>
+  :root {
+    --header: #7fa3b0;
+    --header-dark: #6c92a0;
+    --bg: #eef1f2;
+    --card: #ffffff;
+    --accent: #f2a93b;
+    --accent-dark: #e0982b;
+    --text: #1f2937;
+    --label: #8a939b;
+    --divider: #eef0f1;
+    --badge-bg: #f6e6bf;
+    --badge-text: #8a6a1f;
+    --green: #16a34a;
+    --green-bg: #eafaf0;
+    --amber-bg: #fff6e8;
+    --amber-text: #b06a10;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0;
+    background: var(--bg);
+    font-family: "PingFang TC", "Microsoft JhengHei", "Noto Sans TC", -apple-system, sans-serif;
+    color: var(--text);
+  }
+  .app { max-width: 430px; margin: 0 auto; min-height: 100vh; background: var(--bg); padding-bottom: 32px; }
+
+  .topbar {
+    position: sticky; top: 0; z-index: 10;
+    display: flex; align-items: center; gap: 10px;
+    background: var(--header); color: #fff;
+    padding: calc(14px + env(safe-area-inset-top)) 14px 14px;
+  }
+  .back-btn { background: none; border: none; color: #fff; font-size: 20px; line-height: 1; padding: 4px 6px; cursor: pointer; }
+  .topbar-title { flex: 1; text-align: center; font-size: 17px; font-weight: 700; }
+  .progress-badge { background: var(--badge-bg); color: var(--badge-text); font-size: 12px; font-weight: 700; padding: 5px 12px; border-radius: 999px; white-space: nowrap; }
+
+  .subtitle { font-size: 12px; color: #6b7280; padding: 14px 20px 4px; }
+
+  .card { background: var(--card); border-radius: 14px; margin: 12px 16px; padding: 16px 18px 18px; box-shadow: 0 1px 3px rgba(16,24,40,0.06); }
+  .card-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .card-title { flex: 1; font-size: 16px; font-weight: 700; }
+  .status-chip { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 999px; }
+  .status-chip.filled { background: var(--green-bg); color: var(--green); }
+  .status-chip.empty { background: var(--amber-bg); color: var(--amber-text); }
+
+  .other-name-input { width: 100%; font-size: 13px; padding: 8px 10px; border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 12px; background: #fafafa; color: var(--text); }
+  .other-name-input:focus { outline: none; border-color: var(--header); background: #fff; }
+
+  .row { display: flex; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--divider); gap: 10px; }
+  .row:last-of-type { border-bottom: none; }
+  .row-label { font-size: 13px; color: var(--label); width: 88px; flex-shrink: 0; }
+  .row-value { flex: 1; display: flex; flex-wrap: nowrap; align-items: center; justify-content: flex-end; gap: 6px; min-width: 0; white-space: nowrap; }
+  .num-input { width: 52px; flex-shrink: 0; text-align: right; font-size: 15px; font-weight: 600; color: var(--text); border: none; border-bottom: 1.5px solid #e5e7eb; padding: 4px 2px; background: transparent; }
+  .num-input:focus { outline: none; border-bottom-color: var(--header); }
+  .unit-input { width: 36px; flex-shrink: 0; font-size: 12px; color: var(--label); border: none; border-bottom: 1px dashed #d1d5db; background: transparent; text-align: center; padding: 2px 0; }
+  .unit-input:focus { outline: none; border-bottom-color: var(--header); color: var(--text); }
+
+  .check-inline { display: flex; align-items: center; gap: 5px; flex-shrink: 0; cursor: pointer; user-select: none; padding-left: 6px; }
+  .check-input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .check-box { width: 23px; height: 23px; border-radius: 6px; border: 1.5px solid #d1d5db; background: #fff; flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: background .12s, border-color .12s; }
+  .check-box svg { width: 13px; height: 13px; opacity: 0; transition: opacity .12s; }
+  .check-input:checked ~ .check-box { background: var(--header); border-color: var(--header); }
+  .check-input:checked ~ .check-box svg { opacity: 1; }
+  .check-input:focus-visible ~ .check-box { outline: 2px solid var(--header); outline-offset: 2px; }
+  .check-label { font-size: 12px; font-weight: 500; color: var(--text); white-space: nowrap; }
+
+  .note-block { padding-top: 12px; }
+  .note-label { font-size: 13px; color: var(--label); margin-bottom: 8px; }
+  .note-input { width: 100%; min-height: 60px; font-size: 14px; font-family: inherit; color: var(--text); border: 1px solid #e5e7eb; border-radius: 10px; padding: 10px 12px; resize: vertical; background: #fafafa; }
+  .note-input:focus { outline: none; border-color: var(--header); background: #fff; }
+
+  .save-row { display: flex; justify-content: flex-end; margin-top: 14px; }
+  .btn-pill { border: none; border-radius: 999px; background: var(--accent); color: #fff; font-size: 14px; font-weight: 700; padding: 10px 22px; cursor: pointer; box-shadow: 0 2px 6px rgba(242,169,59,0.35); transition: background .12s, transform .06s; }
+  .btn-pill:active { transform: scale(0.97); background: var(--accent-dark); }
+  .btn-pill:disabled { background: #f3d9a8; box-shadow: none; }
+
+  .toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom)); transform: translateX(-50%); background: #1f2937; color: #fff; font-size: 13px; padding: 10px 18px; border-radius: 999px; opacity: 0; pointer-events: none; transition: opacity .25s; white-space: nowrap; }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <button class="back-btn" aria-label="返回">←</button>
+    <div class="topbar-title">新增場勘資訊</div>
+    <div class="progress-badge" id="progressBadge">0/5</div>
+  </div>
+  <div class="subtitle">請針對各區域直接填寫，儲存後後台可即時查看</div>
+  <div id="areas"></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCoM8ok9iCeu_5oS7yNrM9YrRLHU8RqNio",
+  authDomain: "store-survey-9c302.firebaseapp.com",
+  projectId: "store-survey-9c302",
+  storageBucket: "store-survey-9c302.firebasestorage.app",
+  messagingSenderId: "381206219794",
+  appId: "1:381206219794:web:1979a5aae675f92e161ccb"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+const AREAS = [
+  { id: "counter",   label: "櫃檯區",        editableName: false, color: "#f2a93b" },
+  { id: "selfarea",  label: "自助區",        editableName: false, color: "#6ba3d6" },
+  { id: "wifreezer", label: "W-I冰櫃區",     editableName: false, color: "#5fbf9f" },
+  { id: "teabar",    label: "不可思議茶BAR", editableName: false, color: "#c586e0" },
+  { id: "other",     label: "其他",          editableName: true,  color: "#9aa3ab" }
+];
+
+const savedState = {};
+
+function cardHTML(area) {
+  const chk = (id, label) => `
+    <label class="check-inline">
+      <input type="checkbox" class="check-input" id="${id}">
+      <span class="check-box"><svg viewBox="0 0 16 16" fill="none"><path d="M3 8.5L6.2 11.5L13 4.5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      <span class="check-label">${label}</span>
+    </label>`;
+  return `
+    <div class="card" id="card-${area.id}">
+      <div class="card-head">
+        <span class="dot" style="background:${area.color}"></span>
+        <div class="card-title">${area.label}</div>
+        <span class="status-chip empty" id="status-${area.id}">尚未儲存</span>
+      </div>
+      ${area.editableName ? `<input type="text" class="other-name-input" id="name-${area.id}" placeholder="請填寫區域名稱（工班填寫）">` : ""}
+      <div class="row">
+        <div class="row-label">天花板高度</div>
+        <div class="row-value">
+          <input type="text" inputmode="decimal" class="num-input" id="ceiling-${area.id}" placeholder="0">
+          <input type="text" class="unit-input" id="ceilingUnit-${area.id}" value="公分">
+          ${chk(`ceilingDone-${area.id}`, "完工")}
+        </div>
+      </div>
+      <div class="row">
+        <div class="row-label">面寬度</div>
+        <div class="row-value">
+          <input type="text" inputmode="decimal" class="num-input" id="width-${area.id}" placeholder="0">
+          <input type="text" class="unit-input" id="widthUnit-${area.id}" value="公分">
+          ${chk(`widthDone-${area.id}`, "完工")}
+        </div>
+      </div>
+      <div class="row">
+        <div class="row-label">網路線</div>
+        <div class="row-value">
+          <input type="text" inputmode="numeric" class="num-input" id="cables-${area.id}" placeholder="0">
+          <input type="text" class="unit-input" id="cablesUnit-${area.id}" value="條">
+          ${chk(`cablesDone-${area.id}`, "完工")}
+        </div>
+      </div>
+      <div class="row">
+        <div class="row-label">插座</div>
+        <div class="row-value">
+          <input type="text" inputmode="numeric" class="num-input" id="sockets-${area.id}" placeholder="0">
+          <input type="text" class="unit-input" id="socketsUnit-${area.id}" value="個">
+          ${chk(`socketsDone-${area.id}`, "完工")}
+        </div>
+      </div>
+      <div class="row">
+        <div class="row-label">螢幕安裝台數</div>
+        <div class="row-value">
+          <input type="number" inputmode="numeric" class="num-input" id="screens-${area.id}" placeholder="0">
+          <input type="text" class="unit-input" id="screensUnit-${area.id}" value="台">
+        </div>
+      </div>
+      <div class="note-block">
+        <div class="note-label">備註</div>
+        <textarea class="note-input" id="note-${area.id}" placeholder="輸入備註內容"></textarea>
+      </div>
+      <div class="save-row">
+        <button class="btn-pill" id="btn-${area.id}" onclick="window.saveArea('${area.id}')">儲存</button>
+      </div>
+    </div>`;
+}
+
+function renderAreas() {
+  document.getElementById("areas").innerHTML = AREAS.map(cardHTML).join("");
+}
+renderAreas();
+
+function showToast(text) {
+  const t = document.getElementById("toast");
+  t.textContent = text;
+  t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 1600);
+}
+
+function updateProgressBadge() {
+  const count = Object.values(savedState).filter(Boolean).length;
+  document.getElementById("progressBadge").textContent = `${count}/${AREAS.length}`;
+}
+
+function setStatus(id, saved) {
+  const chip = document.getElementById(`status-${id}`);
+  chip.textContent = saved ? "已儲存" : "尚未儲存";
+  chip.classList.toggle("filled", saved);
+  chip.classList.toggle("empty", !saved);
+  savedState[id] = saved;
+  updateProgressBadge();
+}
+
+async function loadArea(area) {
+  try {
+    const snap = await getDoc(doc(db, "surveys", area.id));
+    if (!snap.exists()) { setStatus(area.id, false); return; }
+    const data = snap.data();
+    if (area.editableName) {
+      const nameEl = document.getElementById(`name-${area.id}`);
+      if (nameEl && data.areaName) nameEl.value = data.areaName;
+    }
+    document.getElementById(`ceiling-${area.id}`).value = data.ceilingHeight ?? "";
+    document.getElementById(`ceilingUnit-${area.id}`).value = data.ceilingUnit ?? "公分";
+    document.getElementById(`ceilingDone-${area.id}`).checked = !!data.ceilingDone;
+    document.getElementById(`width-${area.id}`).value = data.width ?? "";
+    document.getElementById(`widthUnit-${area.id}`).value = data.widthUnit ?? "公分";
+    document.getElementById(`widthDone-${area.id}`).checked = !!data.widthDone;
+    document.getElementById(`cables-${area.id}`).value = data.cables ?? "";
+    document.getElementById(`cablesUnit-${area.id}`).value = data.cablesUnit ?? "條";
+    document.getElementById(`cablesDone-${area.id}`).checked = !!data.cablesDone;
+    document.getElementById(`sockets-${area.id}`).value = data.sockets ?? "";
+    document.getElementById(`socketsUnit-${area.id}`).value = data.socketsUnit ?? "個";
+    document.getElementById(`socketsDone-${area.id}`).checked = !!data.socketsDone;
+    document.getElementById(`screens-${area.id}`).value = data.screens ?? "";
+    document.getElementById(`screensUnit-${area.id}`).value = data.screensUnit ?? "台";
+    document.getElementById(`note-${area.id}`).value = data.note ?? "";
+    setStatus(area.id, true);
+  } catch (e) {
+    console.error(e);
+    setStatus(area.id, false);
+  }
+}
+
+async function loadAll() {
+  for (const area of AREAS) await loadArea(area);
+}
+loadAll();
+
+async function saveArea(id) {
+  const area = AREAS.find(a => a.id === id);
+  const btn = document.getElementById(`btn-${id}`);
+  btn.disabled = true;
+  btn.textContent = "儲存中...";
+
+  const data = {
+    areaName: area.editableName ? (document.getElementById(`name-${id}`).value || "其他") : area.label,
+    ceilingHeight: document.getElementById(`ceiling-${id}`).value,
+    ceilingUnit: document.getElementById(`ceilingUnit-${id}`).value,
+    ceilingDone: document.getElementById(`ceilingDone-${id}`).checked,
+    width: document.getElementById(`width-${id}`).value,
+    widthUnit: document.getElementById(`widthUnit-${id}`).value,
+    widthDone: document.getElementById(`widthDone-${id}`).checked,
+    cables: document.getElementById(`cables-${id}`).value,
+    cablesUnit: document.getElementById(`cablesUnit-${id}`).value,
+    cablesDone: document.getElementById(`cablesDone-${id}`).checked,
+    sockets: document.getElementById(`sockets-${id}`).value,
+    socketsUnit: document.getElementById(`socketsUnit-${id}`).value,
+    socketsDone: document.getElementById(`socketsDone-${id}`).checked,
+    screens: document.getElementById(`screens-${id}`).value,
+    screensUnit: document.getElementById(`screensUnit-${id}`).value,
+    note: document.getElementById(`note-${id}`).value,
+    updatedAt: new Date().toISOString()
+  };
+
+  try {
+    await setDoc(doc(db, "surveys", id), data);
+    setStatus(id, true);
+    showToast(`${data.areaName} 已儲存`);
+  } catch (e) {
+    console.error(e);
+    showToast("儲存失敗，請再試一次");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "儲存";
+  }
+}
+
+window.saveArea = saveArea;
+</script>
+</body>
+</html>

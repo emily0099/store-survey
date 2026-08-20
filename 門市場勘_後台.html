@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>門市場勘 - 後台檢視</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "PingFang TC", "Microsoft JhengHei", "Noto Sans TC", sans-serif;
+    background: #f3f4f6; color: #1f2937; padding: 24px;
+  }
+  .panel { max-width: 1100px; margin: 0 auto; }
+  .panel-head { display: flex; align-items: center; justify-content: space-between; padding: 0 0 18px; }
+  .panel-title { font-size: 20px; font-weight: 700; }
+  .head-right { display: flex; align-items: center; gap: 10px; }
+  .live-dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+  .live-text { font-size: 12px; color: #6b7280; }
+  .btn { border: none; border-radius: 6px; padding: 8px 16px; font-size: 13px; font-weight: 600; cursor: pointer; background: #2563eb; color: #fff; }
+  .btn:hover { background: #1d4ed8; }
+  .btn:disabled { background: #93c5fd; cursor: default; }
+
+  /* table */
+  .table-wrap { overflow-x: auto; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+  table { width: 100%; border-collapse: collapse; background: #fff; font-size: 13px; }
+  thead tr { background: #f8fafc; }
+  th { padding: 11px 14px; text-align: left; font-size: 12px; font-weight: 700; color: #6b7280; border-bottom: 2px solid #e5e7eb; white-space: nowrap; }
+  td { padding: 12px 14px; border-bottom: 1px solid #f1f3f5; vertical-align: top; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: #fafbfc; }
+
+  .area-name { display: flex; align-items: center; gap: 8px; font-weight: 700; white-space: nowrap; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+  .status-pill { font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 999px; white-space: nowrap; }
+  .status-pill.filled { background: #ecfdf5; color: #059669; }
+  .status-pill.empty { background: #f3f4f6; color: #9ca3af; }
+
+  .val { font-weight: 600; color: #1f2937; }
+  .val.empty { color: #d1d5db; font-weight: 400; }
+
+  .done-chip { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 4px; margin-left: 5px; white-space: nowrap; }
+  .done-chip.ok { background: #ecfdf5; color: #059669; }
+  .done-chip.no { background: #fffbeb; color: #b45309; }
+
+  .note-cell { max-width: 180px; font-size: 12px; color: #374151; white-space: pre-wrap; word-break: break-word; }
+  .note-cell.empty { color: #d1d5db; }
+
+  .time-cell { font-size: 11px; color: #9ca3af; white-space: nowrap; }
+
+  .empty-row td { text-align: center; padding: 40px; color: #9ca3af; font-size: 14px; }
+</style>
+</head>
+<body>
+<div class="panel">
+  <div class="panel-head">
+    <div class="panel-title">場勘資訊 - 後台</div>
+    <div class="head-right">
+      <div class="live-dot"></div>
+      <div class="live-text">即時同步</div>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>區域</th>
+          <th>天花板高度</th>
+          <th>面寬度</th>
+          <th>網路線</th>
+          <th>插座</th>
+          <th>螢幕台數</th>
+          <th>備註</th>
+          <th>更新時間</th>
+        </tr>
+      </thead>
+      <tbody id="tbody">
+        <tr class="empty-row"><td colspan="8">載入中...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCoM8ok9iCeu_5oS7yNrM9YrRLHU8RqNio",
+  authDomain: "store-survey-9c302.firebaseapp.com",
+  projectId: "store-survey-9c302",
+  storageBucket: "store-survey-9c302.firebasestorage.app",
+  messagingSenderId: "381206219794",
+  appId: "1:381206219794:web:1979a5aae675f92e161ccb"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+const AREAS = [
+  { id: "counter",   label: "櫃檯區",        color: "#f2a93b" },
+  { id: "selfarea",  label: "自助區",        color: "#6ba3d6" },
+  { id: "wifreezer", label: "W-I冰櫃區",     color: "#5fbf9f" },
+  { id: "teabar",    label: "不可思議茶BAR", color: "#c586e0" },
+  { id: "other",     label: "其他",          color: "#9aa3ab" }
+];
+
+const areaData = {};
+
+function fmt(val, unit) {
+  if (val === undefined || val === null || val === "") return null;
+  return `${val} ${unit}`;
+}
+
+function doneChip(done) {
+  return done
+    ? `<span class="done-chip ok">✓ 完工</span>`
+    : `<span class="done-chip no">未完工</span>`;
+}
+
+function fmtTime(iso) {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleString("zh-TW", { month:"2-digit", day:"2-digit", hour:"2-digit", minute:"2-digit", hour12:false });
+}
+
+function renderRow(area) {
+  const d = areaData[area.id];
+  const name = (d && d.areaName) || area.label;
+
+  if (!d) {
+    return `<tr id="row-${area.id}">
+      <td><div class="area-name"><span class="dot" style="background:${area.color}"></span>${name}</div>
+          <div style="margin-top:5px;"><span class="status-pill empty">尚未填寫</span></div></td>
+      <td><span class="val empty">—</span></td>
+      <td><span class="val empty">—</span></td>
+      <td><span class="val empty">—</span></td>
+      <td><span class="val empty">—</span></td>
+      <td><span class="val empty">—</span></td>
+      <td><span class="note-cell empty">—</span></td>
+      <td><span class="time-cell">—</span></td>
+    </tr>`;
+  }
+
+  const ceil  = fmt(d.ceilingHeight, d.ceilingUnit || "公分");
+  const width = fmt(d.width, d.widthUnit || "公分");
+  const cable = fmt(d.cables, d.cablesUnit || "條");
+  const sock  = fmt(d.sockets, d.socketsUnit || "個");
+  const scr   = fmt(d.screens, d.screensUnit || "台");
+
+  return `<tr id="row-${area.id}">
+    <td><div class="area-name"><span class="dot" style="background:${area.color}"></span>${name}</div>
+        <div style="margin-top:5px;"><span class="status-pill filled">已填寫</span></div></td>
+    <td>${ceil ? `<span class="val">${ceil}</span>${doneChip(d.ceilingDone)}` : '<span class="val empty">—</span>'}</td>
+    <td>${width ? `<span class="val">${width}</span>${doneChip(d.widthDone)}` : '<span class="val empty">—</span>'}</td>
+    <td>${cable ? `<span class="val">${cable}</span>${doneChip(d.cablesDone)}` : '<span class="val empty">—</span>'}</td>
+    <td>${sock  ? `<span class="val">${sock}</span>${doneChip(d.socketsDone)}` : '<span class="val empty">—</span>'}</td>
+    <td>${scr   ? `<span class="val">${scr}</span>` : '<span class="val empty">—</span>'}</td>
+    <td><div class="note-cell${d.note ? '' : ' empty'}">${d.note || '—'}</div></td>
+    <td><span class="time-cell">${fmtTime(d.updatedAt)}</span></td>
+  </tr>`;
+}
+
+function renderAll() {
+  document.getElementById("tbody").innerHTML = AREAS.map(renderRow).join("");
+}
+
+// 每個區域各自監聽，即時更新
+AREAS.forEach(area => {
+  onSnapshot(doc(db, "surveys", area.id), snap => {
+    areaData[area.id] = snap.exists() ? snap.data() : null;
+    // 更新對應那一行
+    const existing = document.getElementById(`row-${area.id}`);
+    const newHtml = document.createElement("tbody");
+    newHtml.innerHTML = renderRow(area);
+    if (existing) existing.replaceWith(newHtml.firstChild);
+    else renderAll();
+  });
+});
+
+// 初始渲染空白列
+renderAll();
+</script>
+</body>
+</html>
