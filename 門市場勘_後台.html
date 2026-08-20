@@ -25,8 +25,10 @@
   .table-wrap { overflow-x: auto; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
   table { width: 100%; border-collapse: collapse; background: #fff; font-size: 13px; }
   thead tr { background: #f8fafc; }
-  th { padding: 11px 14px; text-align: left; font-size: 12px; font-weight: 700; color: #6b7280; border-bottom: 2px solid #e5e7eb; white-space: nowrap; }
-  td { padding: 12px 14px; border-bottom: 1px solid #f1f3f5; vertical-align: top; }
+  th { padding: 11px 14px; text-align: left; font-size: 12px; font-weight: 700; color: #6b7280; border-bottom: 2px solid #e5e7eb; border-right: 1px solid #e5e7eb; white-space: nowrap; }
+  th:last-child { border-right: none; }
+  td { padding: 12px 14px; border-bottom: 1px solid #f1f3f5; border-right: 1px solid #f1f3f5; vertical-align: top; }
+  td:last-child { border-right: none; }
   tbody tr:last-child td { border-bottom: none; }
   tbody tr:hover { background: #fafbfc; }
 
@@ -40,7 +42,7 @@
   .val { font-weight: 600; color: #1f2937; }
   .val.empty { color: #d1d5db; font-weight: 400; }
 
-  .done-chip { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 4px; margin-left: 5px; white-space: nowrap; }
+  .done-chip { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 4px; margin-top: 4px; white-space: nowrap; }
   .done-chip.ok { background: #ecfdf5; color: #059669; }
   .done-chip.no { background: #fffbeb; color: #b45309; }
 
@@ -55,7 +57,7 @@
 <body>
 <div class="panel">
   <div class="panel-head">
-    <div class="panel-title">場勘資訊 - 後台</div>
+    <div class="panel-title">門市場勘資訊 - 後台</div>
     <div class="head-right">
       <div class="live-dot"></div>
       <div class="live-text">即時同步</div>
@@ -67,11 +69,11 @@
       <thead>
         <tr>
           <th>區域</th>
-          <th>天花板高度</th>
-          <th>面寬度</th>
-          <th>網路線</th>
-          <th>插座</th>
-          <th>螢幕台數</th>
+          <th>天花板高度<br><span style="font-weight:400;color:#9ca3af;">公分</span></th>
+          <th>面寬度<br><span style="font-weight:400;color:#9ca3af;">公分</span></th>
+          <th>網路線<br><span style="font-weight:400;color:#9ca3af;">條</span></th>
+          <th>插座<br><span style="font-weight:400;color:#9ca3af;">個</span></th>
+          <th>螢幕台數<br><span style="font-weight:400;color:#9ca3af;">台</span></th>
           <th>備註</th>
           <th>更新時間</th>
         </tr>
@@ -104,14 +106,16 @@ const AREAS = [
   { id: "selfarea",  label: "自助區",        color: "#6ba3d6" },
   { id: "wifreezer", label: "W-I冰櫃區",     color: "#5fbf9f" },
   { id: "teabar",    label: "不可思議茶BAR", color: "#c586e0" },
-  { id: "other",     label: "其他",          color: "#9aa3ab" }
+  { id: "other",     label: "其他",          color: "#9aa3ab" },
+  { id: "other2",    label: "其他 2",        color: "#9aa3ab" },
+  { id: "other3",    label: "其他 3",        color: "#9aa3ab" }
 ];
 
 const areaData = {};
 
-function fmt(val, unit) {
+function fmt(val) {
   if (val === undefined || val === null || val === "") return null;
-  return `${val} ${unit}`;
+  return `${val}`;
 }
 
 function doneChip(done) {
@@ -143,19 +147,19 @@ function renderRow(area) {
     </tr>`;
   }
 
-  const ceil  = fmt(d.ceilingHeight, d.ceilingUnit || "公分");
-  const width = fmt(d.width, d.widthUnit || "公分");
-  const cable = fmt(d.cables, d.cablesUnit || "條");
-  const sock  = fmt(d.sockets, d.socketsUnit || "個");
-  const scr   = fmt(d.screens, d.screensUnit || "台");
+  const ceil  = fmt(d.ceilingHeight);
+  const width = fmt(d.width);
+  const cable = fmt(d.cables);
+  const sock  = fmt(d.sockets);
+  const scr   = fmt(d.screens);
 
   return `<tr id="row-${area.id}">
     <td><div class="area-name"><span class="dot" style="background:${area.color}"></span>${name}</div>
         <div style="margin-top:5px;"><span class="status-pill filled">已填寫</span></div></td>
-    <td>${ceil ? `<span class="val">${ceil}</span>${doneChip(d.ceilingDone)}` : '<span class="val empty">—</span>'}</td>
-    <td>${width ? `<span class="val">${width}</span>${doneChip(d.widthDone)}` : '<span class="val empty">—</span>'}</td>
-    <td>${cable ? `<span class="val">${cable}</span>${doneChip(d.cablesDone)}` : '<span class="val empty">—</span>'}</td>
-    <td>${sock  ? `<span class="val">${sock}</span>${doneChip(d.socketsDone)}` : '<span class="val empty">—</span>'}</td>
+    <td>${ceil ? `<div><span class="val">${ceil}</span></div>${doneChip(d.ceilingDone)}` : '<span class="val empty">—</span>'}</td>
+    <td>${width ? `<div><span class="val">${width}</span></div>${doneChip(d.widthDone)}` : '<span class="val empty">—</span>'}</td>
+    <td>${cable ? `<div><span class="val">${cable}</span></div>${doneChip(d.cablesDone)}` : '<span class="val empty">—</span>'}</td>
+    <td>${sock  ? `<div><span class="val">${sock}</span></div>${doneChip(d.socketsDone)}` : '<span class="val empty">—</span>'}</td>
     <td>${scr   ? `<span class="val">${scr}</span>` : '<span class="val empty">—</span>'}</td>
     <td><div class="note-cell${d.note ? '' : ' empty'}">${d.note || '—'}</div></td>
     <td><span class="time-cell">${fmtTime(d.updatedAt)}</span></td>
