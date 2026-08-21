@@ -135,8 +135,7 @@ function renderRow(area) {
 
   if (!d) {
     return `<tr id="row-${area.id}">
-      <td><div class="area-name"><span class="dot" style="background:${area.color}"></span>${name}</div>
-          <div style="margin-top:5px;"><span class="status-pill empty">尚未填寫</span></div></td>
+      <td><div class="area-name"><span class="dot" style="background:${area.color}"></span>${name}</div></td>
       <td><span class="val empty">—</span></td>
       <td><span class="val empty">—</span></td>
       <td><span class="val empty">—</span></td>
@@ -154,8 +153,7 @@ function renderRow(area) {
   const scr   = fmt(d.screens);
 
   return `<tr id="row-${area.id}">
-    <td><div class="area-name"><span class="dot" style="background:${area.color}"></span>${name}</div>
-        <div style="margin-top:5px;"><span class="status-pill filled">已填寫</span></div></td>
+    <td><div class="area-name"><span class="dot" style="background:${area.color}"></span>${name}</div></td>
     <td>${ceil ? `<div><span class="val">${ceil}</span></div>${doneChip(d.ceilingDone)}` : '<span class="val empty">—</span>'}</td>
     <td>${width ? `<div><span class="val">${width}</span></div>${doneChip(d.widthDone)}` : '<span class="val empty">—</span>'}</td>
     <td>${cable ? `<div><span class="val">${cable}</span></div>${doneChip(d.cablesDone)}` : '<span class="val empty">—</span>'}</td>

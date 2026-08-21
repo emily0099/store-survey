@@ -50,6 +50,7 @@
   .status-chip { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 999px; }
   .status-chip.filled { background: var(--green-bg); color: var(--green); }
   .status-chip.empty { background: var(--amber-bg); color: var(--amber-text); }
+  .status-chip.dirty { background: #fff0e0; color: #c2410c; }
 
   .other-name-input { width: 100%; font-size: 13px; padding: 8px 10px; border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 12px; background: #fafafa; color: var(--text); }
   .other-name-input:focus { outline: none; border-color: var(--header); background: #fff; }
@@ -123,6 +124,7 @@ const AREAS = [
 ];
 
 const savedState = {};
+const dirtyState = {};
 
 function cardHTML(area) {
   const chk = (id, label) => `
@@ -144,7 +146,7 @@ function cardHTML(area) {
         <div class="row-value">
           <input type="text" inputmode="decimal" class="num-input" id="ceiling-${area.id}" placeholder="0">
           <input type="text" class="unit-input" id="ceilingUnit-${area.id}" value="公分">
-          ${chk(`ceilingDone-${area.id}`, "完工")}
+          ${chk(`ceilingDone-${area.id}`, "裝潢完工")}
         </div>
       </div>
       <div class="row">
@@ -152,7 +154,7 @@ function cardHTML(area) {
         <div class="row-value">
           <input type="text" inputmode="decimal" class="num-input" id="width-${area.id}" placeholder="0">
           <input type="text" class="unit-input" id="widthUnit-${area.id}" value="公分">
-          ${chk(`widthDone-${area.id}`, "完工")}
+          ${chk(`widthDone-${area.id}`, "裝潢完工")}
         </div>
       </div>
       <div class="row">
@@ -160,7 +162,7 @@ function cardHTML(area) {
         <div class="row-value">
           <input type="text" inputmode="numeric" class="num-input" id="cables-${area.id}" placeholder="0">
           <input type="text" class="unit-input" id="cablesUnit-${area.id}" value="條">
-          ${chk(`cablesDone-${area.id}`, "完工")}
+          ${chk(`cablesDone-${area.id}`, "水電完工")}
         </div>
       </div>
       <div class="row">
@@ -168,7 +170,7 @@ function cardHTML(area) {
         <div class="row-value">
           <input type="text" inputmode="numeric" class="num-input" id="sockets-${area.id}" placeholder="0">
           <input type="text" class="unit-input" id="socketsUnit-${area.id}" value="個">
-          ${chk(`socketsDone-${area.id}`, "完工")}
+          ${chk(`socketsDone-${area.id}`, "水電完工")}
         </div>
       </div>
       <div class="row">
@@ -193,6 +195,15 @@ function renderAreas() {
 }
 renderAreas();
 
+// 偵測已儲存區域的變更
+['input', 'change'].forEach(evt => {
+  document.getElementById('areas').addEventListener(evt, e => {
+    const card = e.target.closest('.card');
+    if (!card) return;
+    markDirty(card.id.replace('card-', ''));
+  });
+});
+
 function showToast(text) {
   const t = document.getElementById("toast");
   t.textContent = text;
@@ -205,11 +216,19 @@ function updateProgressBadge() {
   document.getElementById("progressBadge").textContent = `${count}/${AREAS.length}`; // 7 areas total
 }
 
+function markDirty(id) {
+  if (!savedState[id] || dirtyState[id]) return;
+  dirtyState[id] = true;
+  const chip = document.getElementById(`status-${id}`);
+  chip.textContent = "有未儲存變更";
+  chip.className = "status-chip dirty";
+}
+
 function setStatus(id, saved) {
+  dirtyState[id] = false;
   const chip = document.getElementById(`status-${id}`);
   chip.textContent = saved ? "已儲存" : "尚未儲存";
-  chip.classList.toggle("filled", saved);
-  chip.classList.toggle("empty", !saved);
+  chip.className = `status-chip ${saved ? 'filled' : 'empty'}`;
   savedState[id] = saved;
   updateProgressBadge();
 }
