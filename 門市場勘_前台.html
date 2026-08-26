@@ -118,6 +118,7 @@ const AREAS = [
   { id: "selfarea",  label: "自助區",        editableName: false, color: "#6ba3d6" },
   { id: "wifreezer", label: "W-I冰櫃區",     editableName: false, color: "#5fbf9f" },
   { id: "teabar",    label: "不可思議茶BAR", editableName: false, color: "#c586e0" },
+  { id: "bakery",    label: "烘培區",        editableName: false, color: "#e07b5a" },
   { id: "other",     label: "其他",          editableName: true,  color: "#9aa3ab" },
   { id: "other2",    label: "其他 2",        editableName: true,  color: "#9aa3ab" },
   { id: "other3",    label: "其他 3",        editableName: true,  color: "#9aa3ab" }
@@ -180,6 +181,16 @@ function cardHTML(area) {
           <input type="text" class="unit-input" id="screensUnit-${area.id}" value="台">
         </div>
       </div>
+      <div class="row" style="flex-wrap:wrap;align-items:flex-start;padding-bottom:14px;">
+        <div class="row-label" style="width:100%;margin-bottom:10px;">施工方式</div>
+        <div style="display:flex;flex-wrap:wrap;gap:10px 20px;width:100%;">
+          ${chk(`installWall-${area.id}`, "壁掛式")}
+          ${chk(`installCabinet-${area.id}`, "吊櫃式")}
+          ${chk(`installRack-${area.id}`, "鎖菸架")}
+          ${chk(`installCeiling-${area.id}`, "吊頂式")}
+          ${chk(`installIsland-${area.id}`, "中島櫃")}
+        </div>
+      </div>
       <div class="note-block">
         <div class="note-label">備註</div>
         <textarea class="note-input" id="note-${area.id}" placeholder="輸入備註內容"></textarea>
@@ -213,7 +224,7 @@ function showToast(text) {
 
 function updateProgressBadge() {
   const count = Object.values(savedState).filter(Boolean).length;
-  document.getElementById("progressBadge").textContent = `${count}/${AREAS.length}`; // 7 areas total
+  document.getElementById("progressBadge").textContent = `${count}/${AREAS.length}`;
 }
 
 function markDirty(id) {
@@ -256,6 +267,11 @@ async function loadArea(area) {
     document.getElementById(`socketsDone-${area.id}`).checked = !!data.socketsDone;
     document.getElementById(`screens-${area.id}`).value = data.screens ?? "";
     document.getElementById(`screensUnit-${area.id}`).value = data.screensUnit ?? "台";
+    document.getElementById(`installWall-${area.id}`).checked = !!data.installWall;
+    document.getElementById(`installCabinet-${area.id}`).checked = !!data.installCabinet;
+    document.getElementById(`installRack-${area.id}`).checked = !!data.installRack;
+    document.getElementById(`installCeiling-${area.id}`).checked = !!data.installCeiling;
+    document.getElementById(`installIsland-${area.id}`).checked = !!data.installIsland;
     document.getElementById(`note-${area.id}`).value = data.note ?? "";
     setStatus(area.id, true);
   } catch (e) {
@@ -291,6 +307,11 @@ async function saveArea(id) {
     socketsDone: document.getElementById(`socketsDone-${id}`).checked,
     screens: document.getElementById(`screens-${id}`).value,
     screensUnit: document.getElementById(`screensUnit-${id}`).value,
+    installWall: document.getElementById(`installWall-${id}`).checked,
+    installCabinet: document.getElementById(`installCabinet-${id}`).checked,
+    installRack: document.getElementById(`installRack-${id}`).checked,
+    installCeiling: document.getElementById(`installCeiling-${id}`).checked,
+    installIsland: document.getElementById(`installIsland-${id}`).checked,
     note: document.getElementById(`note-${id}`).value,
     updatedAt: new Date().toISOString()
   };

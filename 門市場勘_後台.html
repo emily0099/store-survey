@@ -74,12 +74,13 @@
           <th>網路線<br><span style="font-weight:400;color:#9ca3af;">條</span></th>
           <th>插座<br><span style="font-weight:400;color:#9ca3af;">個</span></th>
           <th>螢幕台數<br><span style="font-weight:400;color:#9ca3af;">台</span></th>
+          <th>施工方式</th>
           <th>備註</th>
           <th>更新時間</th>
         </tr>
       </thead>
       <tbody id="tbody">
-        <tr class="empty-row"><td colspan="8">載入中...</td></tr>
+        <tr class="empty-row"><td colspan="9">載入中...</td></tr>
       </tbody>
     </table>
   </div>
@@ -106,6 +107,7 @@ const AREAS = [
   { id: "selfarea",  label: "自助區",        color: "#6ba3d6" },
   { id: "wifreezer", label: "W-I冰櫃區",     color: "#5fbf9f" },
   { id: "teabar",    label: "不可思議茶BAR", color: "#c586e0" },
+  { id: "bakery",    label: "烘培區",        color: "#e07b5a" },
   { id: "other",     label: "其他",          color: "#9aa3ab" },
   { id: "other2",    label: "其他 2",        color: "#9aa3ab" },
   { id: "other3",    label: "其他 3",        color: "#9aa3ab" }
@@ -141,6 +143,7 @@ function renderRow(area) {
       <td><span class="val empty">—</span></td>
       <td><span class="val empty">—</span></td>
       <td><span class="val empty">—</span></td>
+      <td><span class="val empty">—</span></td>
       <td><span class="note-cell empty">—</span></td>
       <td><span class="time-cell">—</span></td>
     </tr>`;
@@ -159,6 +162,10 @@ function renderRow(area) {
     <td>${cable ? `<div><span class="val">${cable}</span></div>${doneChip(d.cablesDone)}` : '<span class="val empty">—</span>'}</td>
     <td>${sock  ? `<div><span class="val">${sock}</span></div>${doneChip(d.socketsDone)}` : '<span class="val empty">—</span>'}</td>
     <td>${scr   ? `<span class="val">${scr}</span>` : '<span class="val empty">—</span>'}</td>
+    <td>${(() => {
+      const types = [d.installWall && '壁掛式', d.installCabinet && '吊櫃式', d.installRack && '鎖菸架', d.installCeiling && '吊頂式', d.installIsland && '中島櫃'].filter(Boolean);
+      return types.length ? `<div style="display:flex;flex-wrap:wrap;gap:4px;">${types.map(t => `<span style="font-size:11px;font-weight:600;background:#f1f5f9;color:#374151;border-radius:6px;padding:2px 7px;">${t}</span>`).join('')}</div>` : '<span class="val empty">—</span>';
+    })()}</td>
     <td><div class="note-cell${d.note ? '' : ' empty'}">${d.note || '—'}</div></td>
     <td><span class="time-cell">${fmtTime(d.updatedAt)}</span></td>
   </tr>`;
