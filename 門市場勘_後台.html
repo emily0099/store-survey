@@ -52,6 +52,27 @@
   .time-cell { font-size: 11px; color: #9ca3af; white-space: nowrap; }
 
   .empty-row td { text-align: center; padding: 40px; color: #9ca3af; font-size: 14px; }
+
+  /* photos */
+  .photo-section { background: #fff; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); padding: 18px 20px; margin-bottom: 20px; }
+  .photo-section-head { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+  .photo-section-title { font-size: 15px; font-weight: 700; }
+  .photo-count { font-size: 12px; font-weight: 700; background: #f1f5f9; color: #64748b; padding: 2px 9px; border-radius: 99px; }
+  .photo-grid { display: flex; flex-wrap: wrap; gap: 10px; }
+  .photo-item { position: relative; cursor: pointer; }
+  .photo-item img { width: 100px; height: 100px; object-fit: cover; border-radius: 8px; display: block; transition: opacity .15s; }
+  .photo-item:hover img { opacity: .85; }
+  .photo-del { display: none; position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; border-radius: 50%; background: rgba(0,0,0,.65); color: #fff; border: none; font-size: 13px; line-height: 1; cursor: pointer; align-items: center; justify-content: center; }
+  .photo-item:hover .photo-del { display: flex; }
+  .photo-item .photo-time { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,.5); color: #fff; font-size: 10px; padding: 3px 5px; border-radius: 0 0 8px 8px; text-align: center; }
+  .photo-empty { color: #9ca3af; font-size: 13px; }
+
+  /* lightbox */
+  .lightbox { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.88); z-index: 1000; align-items: center; justify-content: center; }
+  .lightbox.show { display: flex; }
+  .lightbox img { max-width: 92vw; max-height: 90vh; border-radius: 8px; }
+  .lightbox-close { position: absolute; top: 18px; right: 24px; color: #fff; font-size: 28px; cursor: pointer; line-height: 1; }
+  .lightbox-time { position: absolute; bottom: 18px; left: 50%; transform: translateX(-50%); color: rgba(255,255,255,.7); font-size: 12px; }
 </style>
 </head>
 <body>
@@ -84,11 +105,28 @@
       </tbody>
     </table>
   </div>
+
+  <div class="photo-section" style="margin-top:20px;">
+    <div class="photo-section-head">
+      <div class="photo-section-title">現場照片</div>
+      <span class="photo-count" id="photo-count">載入中...</span>
+    </div>
+    <div class="photo-grid" id="photo-grid">
+      <span class="photo-empty">載入中...</span>
+    </div>
+  </div>
+</div>
+
+<!-- Lightbox -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <span class="lightbox-close" onclick="closeLightbox()">✕</span>
+  <img id="lightbox-img" src="">
+  <div class="lightbox-time" id="lightbox-time"></div>
 </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, doc, onSnapshot, collection, getDocs, query, orderBy, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCoM8ok9iCeu_5oS7yNrM9YrRLHU8RqNio",
@@ -192,6 +230,63 @@ AREAS.forEach(area => {
 
 // 初始渲染空白列
 renderAll();
+
+// ── 照片 ──
+function fmtPhotoTime(iso) {
+  if (!iso) return '';
+  return new Date(iso).toLocaleString('zh-TW', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', hour12:false });
+}
+
+window.deletePhoto = async function(id, btn) {
+  if (!confirm('確定要刪除這張照片？')) return;
+  btn.disabled = true;
+  try {
+    await deleteDoc(doc(db, 'photos', id));
+    await loadPhotos();
+  } catch(e) {
+    console.error(e);
+    alert('刪除失敗，請再試一次');
+    btn.disabled = false;
+  }
+};
+
+window.openLightbox = function(src, time) {
+  document.getElementById('lightbox-img').src = src;
+  document.getElementById('lightbox-time').textContent = time;
+  document.getElementById('lightbox').classList.add('show');
+};
+window.closeLightbox = function() {
+  document.getElementById('lightbox').classList.remove('show');
+};
+
+async function loadPhotos() {
+  const grid = document.getElementById('photo-grid');
+  const count = document.getElementById('photo-count');
+  try {
+    const snap = await getDocs(query(collection(db, 'photos'), orderBy('uploadedAt', 'asc')));
+    if (snap.empty) {
+      grid.innerHTML = '<span class="photo-empty">尚未上傳照片</span>';
+      count.textContent = '0 張';
+      return;
+    }
+    grid.innerHTML = snap.docs.map(d => {
+      const { dataUrl, uploadedAt } = d.data();
+      const t = fmtPhotoTime(uploadedAt);
+      return `<div class="photo-item">
+        <img src="${dataUrl}" onclick="openLightbox('${dataUrl}','${t}')">
+        <button class="photo-del" onclick="deletePhoto('${d.id}',this)" title="刪除">✕</button>
+        <div class="photo-time">${t}</div>
+      </div>`;
+    }).join('');
+    count.textContent = `${snap.size} 張`;
+  } catch(e) {
+    console.error('載入照片失敗', e);
+    grid.innerHTML = '<span class="photo-empty">載入失敗</span>';
+    count.textContent = '—';
+  }
+}
+
+loadPhotos();
 </script>
 </body>
 </html>
